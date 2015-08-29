@@ -79,6 +79,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'huey.djhuey',
     'swampdragon',
+    'guardian',
     'debug_toolbar',
 ) + LOCAL_APPS
 
@@ -92,6 +93,12 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 )
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
+)
+ANONYMOUS_USER_ID = -1
 
 ROOT_URLCONF = 'opencraft.urls'
 

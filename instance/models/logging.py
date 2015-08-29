@@ -24,28 +24,14 @@ Instance app models - Logging
 
 import logging
 
-from swampdragon.pubsub_providers.data_publisher import publish_data
-
 from django.db import models
 from django.db.models import query
 from django_extensions.db.models import TimeStampedModel
 
-from instance.models.logging_mixin import PUBLISHED_LOG_LEVEL_SET
-from instance.models.logging_utils import level_to_integer
+from instance.logging import level_to_integer
 from instance.models.instance import OpenEdXInstance
 from instance.models.server import OpenStackServer
 from instance.models.utils import ValidateModelMixin
-
-
-# Constants ###################################################################
-
-LOG_LEVEL_CHOICES = (
-    ('debug', 'Debug'),
-    ('info', 'Info'),
-    ('warn', 'Warning'),
-    ('error', 'Error'),
-    ('exception', 'Exception'),
-)
 
 
 # Logging #####################################################################
@@ -70,6 +56,14 @@ class LogEntry(ValidateModelMixin, TimeStampedModel):
     """
     Single log entry
     """
+    LOG_LEVEL_CHOICES = (
+        ('debug', 'Debug'),
+        ('info', 'Info'),
+        ('warn', 'Warning'),
+        ('error', 'Error'),
+        ('exception', 'Exception'),
+    )
+
     text = models.TextField(blank=True)
     level = models.CharField(max_length=9, db_index=True, default='info', choices=LOG_LEVEL_CHOICES)
 
@@ -77,6 +71,11 @@ class LogEntry(ValidateModelMixin, TimeStampedModel):
 
     class Meta:
         abstract = True
+        log_entry_model = None
+        log_entry_obj_attribute_name = None
+        permissions = (
+            ("read_car", "Can read Car"),
+        )
 
     def __str__(self):
         return '{0.created:%Y-%m-%d %H:%M:%S} [{0.level}] {0.text}'.format(self)
@@ -89,24 +88,24 @@ class LogEntry(ValidateModelMixin, TimeStampedModel):
         return level_to_integer(self.level)
 
     @property
-    def instance(self):
+    def obj(self):
         """
-        Instance of the log entry - To subclass
+        Returns the object this log entry refers to
         """
-        raise NotImplementedError
+        meta = self.__class__.Meta
+        if meta.log_entry_obj_attribute_name is None:
+            return None
+        return getattr(self, meta.log_entry_obj_attribute_name)
 
-    def publish(self):
-        """
-        Publish the log entry to the messaging system, broadcasting it to subscribers
-        """
-        logger.log(self.level_integer, self.text)
 
-        if self.level in PUBLISHED_LOG_LEVEL_SET:
-            publish_data('log', {
-                'type': 'instance_log',
-                'instance_id': self.instance.pk,
-                'log_entry': str(self),
-            })
+class GeneralLogEntry(LogEntry):
+    """
+    Single log entry that isn't attached to a specific model, such as instances or servers
+    """
+    class Meta:
+        log_entry_model = None
+        log_entry_obj_attribute_name = None
+        verbose_name_plural = "General Log Entries"
 
 
 class InstanceLogEntry(LogEntry):
@@ -116,6 +115,8 @@ class InstanceLogEntry(LogEntry):
     instance = models.ForeignKey(OpenEdXInstance, related_name='logentry_set')
 
     class Meta:
+        log_entry_model = OpenEdXInstance
+        log_entry_obj_attribute_name = 'instance'
         verbose_name_plural = "Instance Log Entries"
 
 
@@ -126,6 +127,8 @@ class ServerLogEntry(LogEntry):
     server = models.ForeignKey(OpenStackServer, related_name='logentry_set')
 
     class Meta:
+        log_entry_model = OpenStackServer
+        log_entry_obj_attribute_name = 'server'
         verbose_name_plural = "Server Log Entries"
 
     @property

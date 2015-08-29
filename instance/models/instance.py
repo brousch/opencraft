@@ -34,7 +34,7 @@ from django_extensions.db.models import TimeStampedModel
 from instance import ansible, github
 from instance.gandi import GandiAPI
 from instance.github import fork_name2tuple, get_username_list_from_team
-from instance.log_exception import log_exception
+from instance.logging import log_exception
 from instance.repo import open_repository
 from instance.models.logging_mixin import LoggerInstanceMixin
 from instance.models.utils import ValidateModelMixin

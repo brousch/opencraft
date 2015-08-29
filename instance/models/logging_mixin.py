@@ -28,13 +28,7 @@ from functools import partial
 
 from django.db import models
 
-from instance.models.logging_utils import level_to_integer
-
-
-# Constants ###################################################################
-
-# TODO: Don't propagate exceptions & debug data to end users
-PUBLISHED_LOG_LEVEL_SET = ('info', 'warn', 'error', 'exception')
+from instance.logging import PUBLISHED_LOG_LEVEL_SET
 
 
 # Logging #####################################################################
@@ -44,26 +38,8 @@ logger = logging.getLogger(__name__)
 
 # Models ######################################################################
 
-class LoggerMixin(models.Model):
-    """
-    Logging facilities - Logs stored on the model & shared with the client via websocket
-    """
-    class Meta:
-        abstract = True
 
-    def log(self, level, text, **kwargs):
-        """
-        Log an entry text at a specified level
-        """
-        if self.pk is not None:
-            self.logentry_set.create(level=level, text=text.rstrip(), **kwargs)
-        else:
-            level_integer = level_to_integer(level)
-            text = '{} [Log not attached to instance, not saved yet]'.format(text)
-            logger.log(level_integer, text)
-
-
-class LoggerInstanceMixin(LoggerMixin):
+class LoggerInstanceMixin(models.Model):
     """
     Logging facilities - Instances
     """

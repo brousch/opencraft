@@ -36,7 +36,6 @@ from django_extensions.db.models import TimeStampedModel
 from instance import openstack
 from instance.utils import is_port_open, to_json
 from instance.models.instance import OpenEdXInstance
-from instance.models.logging_mixin import LoggerMixin
 from instance.models.utils import ValidateModelMixin
 
 
@@ -72,7 +71,7 @@ class ServerQuerySet(models.QuerySet):
         return self.filter(~Q(status=Server.TERMINATED))
 
 
-class Server(ValidateModelMixin, TimeStampedModel, LoggerMixin):
+class Server(ValidateModelMixin, TimeStampedModel):
     """
     A single server VM
     """
